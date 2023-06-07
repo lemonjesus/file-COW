@@ -99,6 +99,7 @@ void cow_commit(cow_file* file) {
         cow_change change = file->changes[i];
         fseek(file->file, change.offset, SEEK_SET);
         fwrite(change.data, change.size, 1, file->file);
+        free(change.data);
     }
 
     file->changes_count = 0;
