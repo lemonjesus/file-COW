@@ -1,3 +1,6 @@
+#ifndef _FILE_COW_H
+#define _FILE_COW_H
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -15,7 +18,7 @@ typedef struct cow_file {
 } cow_file;
 
 // cow_open: opens a file for copy-on-write, returns NULL on failure
-cow_file* cow_open(char* filename) {
+static cow_file* cow_open(char* filename) {
     cow_file* file = (cow_file*)malloc(sizeof(cow_file));
     file->file = fopen(filename, "rb+");
 
@@ -31,7 +34,7 @@ cow_file* cow_open(char* filename) {
 }
 
 // cow_close: closes the file and frees memory, losing any uncommitted changes
-void cow_close(cow_file* file) {
+static void cow_close(cow_file* file) {
     fclose(file->file);
 
     for(size_t i = 0; i < file->changes_count; i++) {
@@ -43,7 +46,7 @@ void cow_close(cow_file* file) {
 }
 
 // cow_read: reads from the file, including any changes you've made
-void cow_read(cow_file* file, void* buffer, size_t offset, size_t size) {
+static void cow_read(cow_file* file, void* buffer, size_t offset, size_t size) {
     // step one: read from file
     fseek(file->file, offset, SEEK_SET);
     fread(buffer, size, 1, file->file);
@@ -63,7 +66,7 @@ void cow_read(cow_file* file, void* buffer, size_t offset, size_t size) {
 }
 
 // cow_write: writes on top of the file, but doesn't actually write to disk until you commit
-void cow_write(cow_file* file, void* buffer, size_t offset, size_t size) {
+static void cow_write(cow_file* file, void* buffer, size_t offset, size_t size) {
     cow_change change;
     change.offset = offset;
     change.size = size;
@@ -76,23 +79,23 @@ void cow_write(cow_file* file, void* buffer, size_t offset, size_t size) {
 }
 
 // cow_size: returns the size of the file
-size_t cow_size(cow_file* file) {
+static size_t cow_size(cow_file* file) {
     fseek(file->file, 0, SEEK_END);
     return ftell(file->file);
 }
 
 // cow_unprotect: allows the file to be committed
-void cow_unprotect(cow_file* file) {
+static void cow_unprotect(cow_file* file) {
     file->is_protected = 0;
 }
 
 // cow_protect: prevents the file from being committed (default)
-void cow_protect(cow_file* file) {
+static void cow_protect(cow_file* file) {
     file->is_protected = 1;
 }
 
 // cow_commit: writes all changes to disk and removes them from memory
-void cow_commit(cow_file* file) {
+static void cow_commit(cow_file* file) {
     if(file->is_protected) return;
 
     for(size_t i = 0; i < file->changes_count; i++) {
@@ -105,3 +108,5 @@ void cow_commit(cow_file* file) {
     file->changes_count = 0;
     file->changes = (cow_change*)realloc(file->changes, sizeof(cow_change));
 }
+
+#endif
